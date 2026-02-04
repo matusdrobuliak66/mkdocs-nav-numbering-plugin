@@ -7,7 +7,8 @@ theme:
 
 plugins:
   - search
-  - nav-numbering
+  - nav-numbering:
+      preserve_anchor_ids: true
 
 nav:
   - Home: index.md
@@ -21,3 +22,7 @@ nav:
       - CLI: reference/cli.md
       - API: reference/api.md
   - FAQ: faq.md
+
+
+markdown_extensions:
+  - attr_list  # Required!

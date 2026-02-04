@@ -26,9 +26,13 @@ plugins:
       number_h1: true
       number_nav: true
       number_headings: true
+      preserve_anchor_ids: false
       separator: "."
       exclude:
         - index.md
+
+markdown_extensions:
+  - attr_list  # Required when preserve_anchor_ids is true
 ```
 
 ## Options
@@ -39,5 +43,21 @@ plugins:
 - `number_nav` (bool, default: true)
 - `number_headings` (bool, default: true)
 - `number_h1` (bool, default: true)
+- `preserve_anchor_ids` (bool, default: false) — Preserve original heading anchor IDs without number prefixes (requires `attr_list`)
 - `separator` (str, default: ".")
 - `exclude` (list, default: [])
+
+### `preserve_anchor_ids`
+
+By default, MkDocs generates heading IDs from the final heading text. Since this plugin prepends numbering, your anchors can end up including the numbers.
+
+Enable `preserve_anchor_ids: true` to add explicit `{#...}` IDs based on the original (un-numbered) heading text. Duplicate headings are automatically suffixed with `-1`, `-2`, etc.
+
+```yaml
+plugins:
+  - nav-numbering:
+      preserve_anchor_ids: true
+
+markdown_extensions:
+  - attr_list
+```

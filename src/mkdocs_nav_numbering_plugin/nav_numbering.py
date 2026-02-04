@@ -1,9 +1,43 @@
 import re
+import unicodedata
 from typing import Dict, List
 
 from mkdocs.config import config_options
 from mkdocs.plugins import BasePlugin
 from mkdocs.structure.nav import Navigation, Section, Page, Link
+
+
+def slugify(text: str) -> str:
+    """
+    Convert text to a URL-friendly slug, matching MkDocs' default toc behavior.
+
+    - Converts to lowercase
+    - Normalizes unicode characters
+    - Replaces spaces and underscores with hyphens
+    - Removes non-alphanumeric characters (except hyphens)
+    - Collapses multiple hyphens into one
+    - Strips leading/trailing hyphens
+    """
+    # Normalize unicode characters (e.g., accented chars -> base form)
+    text = unicodedata.normalize("NFKD", text)
+    text = text.encode("ascii", "ignore").decode("ascii")
+
+    # Convert to lowercase
+    text = text.lower()
+
+    # Replace spaces and underscores with hyphens
+    text = re.sub(r"[\s_]+", "-", text)
+
+    # Remove non-alphanumeric characters except hyphens
+    text = re.sub(r"[^\w-]", "", text)
+
+    # Collapse multiple hyphens into one
+    text = re.sub(r"-+", "-", text)
+
+    # Strip leading/trailing hyphens
+    text = text.strip("-")
+
+    return text
 
 
 class NavNumberingPlugin(BasePlugin):
@@ -19,6 +53,7 @@ class NavNumberingPlugin(BasePlugin):
         number_h1: Add number to the first h1 (page title) (default: true)
         separator: Separator between number parts (default: ".")
         exclude: List of page paths to exclude from numbering (default: [])
+        preserve_anchor_ids: Preserve original anchor IDs without number prefixes (default: false)
     """
 
     config_scheme = (
@@ -30,6 +65,7 @@ class NavNumberingPlugin(BasePlugin):
         ("number_h1", config_options.Type(bool, default=True)),
         ("separator", config_options.Type(str, default=".")),
         ("exclude", config_options.Type(list, default=[])),
+        ("preserve_anchor_ids", config_options.Type(bool, default=False)),
     )
 
     def __init__(self):
@@ -97,6 +133,9 @@ class NavNumberingPlugin(BasePlugin):
         Prepend the nav number to headings inside each page.
         - The first h1 (page title) gets the base_number (e.g., 3.1.1)
         - Subsequent h2, h3, etc. get sub-numbers (e.g., 3.1.1.1, 3.1.1.2)
+
+        When preserve_anchor_ids is enabled, explicit {#slug} attributes are added
+        to headings to preserve the original anchor IDs without number prefixes.
         """
         if not self.config["enabled"] or not self.config["number_headings"]:
             return markdown
@@ -109,6 +148,7 @@ class NavNumberingPlugin(BasePlugin):
         heading_depth = self.config["heading_depth"]
         number_h1 = self.config["number_h1"]
         separator = self.config["separator"]
+        preserve_anchor_ids = self.config["preserve_anchor_ids"]
         base_depth = len(base_number.split(separator))
 
         # Track whether we've seen the first h1 (page title)
@@ -118,10 +158,41 @@ class NavNumberingPlugin(BasePlugin):
         # h2 -> counter[0], h3 -> counter[1], etc.
         counters: List[int] = []
 
+        # Track used slugs for duplicate detection (per page)
+        used_slugs: Dict[str, int] = {}
+
+        def get_unique_slug(title: str) -> str:
+            """Generate a unique slug, adding suffix for duplicates."""
+            base_slug = slugify(title)
+            if not base_slug:
+                base_slug = "heading"
+
+            if base_slug not in used_slugs:
+                used_slugs[base_slug] = 0
+                return base_slug
+            else:
+                used_slugs[base_slug] += 1
+                return f"{base_slug}-{used_slugs[base_slug]}"
+
+        def extract_existing_id(title: str) -> tuple:
+            """
+            Extract existing {#custom-id} from title if present.
+            Returns (clean_title, existing_id) or (title, None).
+            """
+            match = re.search(r'\s*\{#([^}]+)\}\s*$', title)
+            if match:
+                existing_id = match.group(1)
+                clean_title = title[:match.start()].strip()
+                return clean_title, existing_id
+            return title, None
+
         def repl(match: re.Match) -> str:
             hashes = match.group("hashes")
-            title = match.group("title").strip()
+            raw_title = match.group("title").strip()
             level = len(hashes)  # "#"=1, "##"=2, etc.
+
+            # Check for existing {#custom-id} attribute
+            title, existing_id = extract_existing_id(raw_title)
 
             # Avoid double-numbering if already numbered
             if re.match(r"^\d+(\.\d+)*\s+", title):
@@ -132,12 +203,22 @@ class NavNumberingPlugin(BasePlugin):
                 if not first_h1_seen[0]:
                     first_h1_seen[0] = True
                     if number_h1:
+                        if preserve_anchor_ids and not existing_id:
+                            slug = get_unique_slug(title)
+                            return f"{hashes} {base_number} {title} {{#{slug}}}"
+                        elif existing_id:
+                            return f"{hashes} {base_number} {title} {{#{existing_id}}}"
                         return f"{hashes} {base_number} {title}"
                     return match.group(0)
                 else:
                     # Additional h1s in the same page - handle gracefully
                     counters.clear()
                     if number_h1:
+                        if preserve_anchor_ids and not existing_id:
+                            slug = get_unique_slug(title)
+                            return f"{hashes} {base_number} {title} {{#{slug}}}"
+                        elif existing_id:
+                            return f"{hashes} {base_number} {title} {{#{existing_id}}}"
                         return f"{hashes} {base_number} {title}"
                     return match.group(0)
 
@@ -162,6 +243,11 @@ class NavNumberingPlugin(BasePlugin):
             rel = separator.join(str(c) for c in counters[:adjusted_level])
             full_number = f"{base_number}{separator}{rel}"
 
+            if preserve_anchor_ids and not existing_id:
+                slug = get_unique_slug(title)
+                return f"{hashes} {full_number} {title} {{#{slug}}}"
+            elif existing_id:
+                return f"{hashes} {full_number} {title} {{#{existing_id}}}"
             return f"{hashes} {full_number} {title}"
 
         heading_pattern = re.compile(r"^(?P<hashes>#{1,6})\s+(?P<title>.+)$", re.MULTILINE)
