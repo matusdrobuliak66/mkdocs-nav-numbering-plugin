@@ -1,0 +1,23 @@
+site_name: Nav Numbering Showcase
+site_url: https://example.com/
+repo_url: https://github.com/matusdrobuliak66/mkdocs-nav-numbering-plugin
+
+theme:
+  name: material
+
+plugins:
+  - search
+  - nav-numbering
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Install: guide/install.md
+      - Quick Start: guide/quick-start.md
+  - User Guide:
+      - Configuration: guide/configuration.md
+      - Tips & Tricks: guide/tips.md
+  - Reference:
+      - CLI: reference/cli.md
+      - API: reference/api.md
+  - FAQ: faq.md
