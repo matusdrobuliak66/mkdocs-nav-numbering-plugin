@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mkdocs-nav-numbering-plugin"
+version = "0.1.0"
+description = "MkDocs plugin to add hierarchical numbering to nav and page headings"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+  {name = "Matus Drobuliak"},
+]
+keywords = ["mkdocs", "plugin", "navigation", "numbering", "documentation"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Plugins",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Documentation",
+  "Topic :: Software Development :: Documentation",
+]
+
+dependencies = [
+  "mkdocs>=1.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/mkdocs-nav-numbering-plugin"
+Repository = "https://github.com/your-org/mkdocs-nav-numbering-plugin"
+Issues = "https://github.com/your-org/mkdocs-nav-numbering-plugin/issues"
+
+[project.entry-points."mkdocs.plugins"]
+nav-numbering = "mkdocs_nav_numbering_plugin:NavNumberingPlugin"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
