@@ -1,5 +1,8 @@
 # mkdocs-nav-numbering-plugin
 
+[![CI](https://github.com/matusdrobuliak66/mkdocs-nav-numbering-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/matusdrobuliak66/mkdocs-nav-numbering-plugin/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/mkdocs-nav-numbering-plugin.svg)](https://pypi.org/project/mkdocs-nav-numbering-plugin/)
+
 MkDocs plugin that adds hierarchical numbering to navigation items and page headings.
 
 ## Features
