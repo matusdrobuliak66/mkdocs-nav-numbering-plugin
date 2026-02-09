@@ -4,6 +4,8 @@ repo_url: https://github.com/matusdrobuliak66/mkdocs-nav-numbering-plugin
 
 theme:
   name: material
+  features:
+    - navigation.tabs
 
 plugins:
   - search
@@ -19,7 +21,7 @@ nav:
       - Configuration: guide/configuration.md
       - Tips & Tricks: guide/tips.md
   - Reference:
-      - CLI: reference/cli.md
+      - MkDocs Commands: reference/cli.md
       - API: reference/api.md
   - FAQ: faq.md
 

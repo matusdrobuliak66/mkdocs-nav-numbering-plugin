@@ -128,6 +128,28 @@ class NavNumberingPlugin(BasePlugin):
 
         return nav
 
+    def _find_code_block_ranges(self, markdown: str) -> List[tuple]:
+        """
+        Find all fenced code block ranges in the markdown.
+        Returns a list of (start_pos, end_pos) tuples.
+        """
+        ranges = []
+        fence_pattern = re.compile(r'^(```|~~~)', re.MULTILINE)
+
+        matches = list(fence_pattern.finditer(markdown))
+
+        # Process pairs of fence markers (opening and closing)
+        i = 0
+        while i < len(matches) - 1:
+            start_match = matches[i]
+            end_match = matches[i + 1]
+
+            # Code block starts at the opening fence and ends after the closing fence
+            ranges.append((start_match.start(), end_match.end()))
+            i += 2  # Skip to next pair
+
+        return ranges
+
     def on_page_markdown(self, markdown: str, page: Page, config, files) -> str:
         """
         Prepend the nav number to headings inside each page.
@@ -151,6 +173,9 @@ class NavNumberingPlugin(BasePlugin):
         preserve_anchor_ids = self.config["preserve_anchor_ids"]
         base_depth = len(base_number.split(separator))
 
+        # Find all fenced code block ranges to skip headings inside them
+        code_block_ranges = self._find_code_block_ranges(markdown)
+
         # Track whether we've seen the first h1 (page title)
         first_h1_seen = [False]  # Use list to allow mutation in nested function
 
@@ -160,6 +185,13 @@ class NavNumberingPlugin(BasePlugin):
 
         # Track used slugs for duplicate detection (per page)
         used_slugs: Dict[str, int] = {}
+
+        def is_in_code_block(pos: int) -> bool:
+            """Check if a position is inside a code block."""
+            for start, end in code_block_ranges:
+                if start <= pos < end:
+                    return True
+            return False
 
         def get_unique_slug(title: str) -> str:
             """Generate a unique slug, adding suffix for duplicates."""
@@ -187,6 +219,10 @@ class NavNumberingPlugin(BasePlugin):
             return title, None
 
         def repl(match: re.Match) -> str:
+            # Skip headings inside code blocks
+            if is_in_code_block(match.start()):
+                return match.group(0)
+
             hashes = match.group("hashes")
             raw_title = match.group("title").strip()
             level = len(hashes)  # "#"=1, "##"=2, etc.
