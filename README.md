@@ -13,7 +13,7 @@ MkDocs plugin that adds hierarchical numbering to navigation items and page head
 - Configurable separator
 - Exclude specific pages
 
-![image](resources/image.png)
+![image](https://raw.githubusercontent.com/matusdrobuliak66/mkdocs-nav-numbering-plugin/main/resources/image.png)
 
 ## Installation
 
